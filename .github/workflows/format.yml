@@ -11,17 +11,13 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Install swift-format
-        run: |
-          brew install swift-format
       - name: Check formatting
         run: |
           found_issues=false
           files_with_issues=()
           
           while IFS= read -r file; do
-            if ! swift-format lint --strict "$file"; then
+            if ! swiftformat --config .swiftformat --lint "$file"; then
               found_issues=true
               files_with_issues+=("$file")
               echo "❌ Formatting issues found in: $file"
