@@ -13,7 +13,11 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fhuggingface%2Fswift-transformers%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/huggingface/swift-transformers)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fhuggingface%2Fswift-transformers%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/huggingface/swift-transformers)
 
-`swift-transformers` is a collection of utilities to help adopt language models in Swift apps. 
+
+This preview edition of `swift-transformers` features support for cutting edge features released at WWDC 2024, such as Stateful models & Mistral 7B support.
+
+This is a collection of utilities to help adopt language models in Swift apps. It tries to follow the Python `transformers` API and abstractions whenever possible, but it also aims to provide an idiomatic Swift interface and does not assume prior familiarity with [`transformers`](https://github.com/huggingface/transformers) or [`tokenizers`](https://github.com/huggingface/tokenizers).
+
 
 It tries to follow the Python `transformers` API and abstractions whenever possible, but it also aims to provide an idiomatic Swift interface and does not assume prior familiarity with [`transformers`](https://github.com/huggingface/transformers) or [`tokenizers`](https://github.com/huggingface/tokenizers).
 
@@ -106,7 +110,21 @@ Encoder-decoder models such as T5 and Flan are currently _not supported_.
 - [`exporters`](https://github.com/huggingface/exporters), a Core ML conversion package for transformers models, based on Apple's [`coremltools`](https://github.com/apple/coremltools).
 - [`transformers-to-coreml`](https://huggingface.co/spaces/coreml-projects/transformers-to-coreml), a no-code Core ML conversion tool built on `exporters`.
 
+
+## SwiftPM
+
+To use `swift-transformers` with SwiftPM, you can add this to your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/huggingface/swift-transformers", branch: "preview")
+]
+```
+
+And then, add the Transformers library as a dependency to your target:
+
 ## Contributing 
+
 
 Swift Transformers is a community project and we welcome contributions. Please
 check out [Issues](https://github.com/huggingface/swift-transformers/issues)

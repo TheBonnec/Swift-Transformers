@@ -21,8 +21,15 @@ public struct HubApi {
     public typealias RepoType = Hub.RepoType
     public typealias Repo = Hub.Repo
     
-    public init(downloadBase: URL? = nil, hfToken: String? = nil, endpoint: String = "https://huggingface.co", useBackgroundSession: Bool = false, useOfflineMode: Bool? = nil) {
-        self.hfToken = hfToken ?? Self.hfTokenFromEnv()
+
+    public init(
+        downloadBase: URL? = nil,
+        hfToken: String? = nil,
+        endpoint: String = "https://huggingface.co",
+        useBackgroundSession: Bool = false
+    ) {
+        self.hfToken = hfToken ?? ProcessInfo.processInfo.environment["HUGGING_FACE_HUB_TOKEN"]
+
         if let downloadBase {
             self.downloadBase = downloadBase
         } else {
@@ -186,9 +193,13 @@ public extension HubApi {
     /// `fileURL` is a complete local file path for the given model
     func configuration(fileURL: URL) throws -> Config {
         let data = try Data(contentsOf: fileURL)
-        let parsed = try JSONSerialization.jsonObject(with: data, options: [])
-        guard let dictionary = parsed as? [NSString: Any] else { throw Hub.HubClientError.parse }
-        return Config(dictionary)
+        do {
+            let parsed = try JSONSerialization.jsonObject(with: data, options: [])
+            guard let dictionary = parsed as? [NSString: Any] else { throw Hub.HubClientError.parse }
+            return Config(dictionary)
+        } catch {
+            throw Hub.HubClientError.jsonSerialization(fileURL: fileURL, message: "JSON Serialization failed for \(fileURL). Please verify that you have set the HUGGING_FACE_HUB_TOKEN environment variable.")
+        }
     }
 }
 
