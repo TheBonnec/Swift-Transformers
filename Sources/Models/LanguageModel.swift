@@ -20,6 +20,8 @@ public class LanguageModel {
     private var configuration: LanguageModelConfigurationFromHub?
     private var _tokenizer: Tokenizer?
 
+  
+
     public required init(model: MLModel) {
         self.model = model
         (minContextLength, maxContextLength) = Self.contextRange(from: model)
@@ -337,6 +339,7 @@ extension LanguageModel: TextGenerationModel {
     }
 }
 
+
 @available(macOS 15.0, iOS 18.0, *)
 public class LanguageModelWithStatefulKVCache: LanguageModel {
     private enum Mode {
@@ -414,3 +417,4 @@ public class LanguageModelWithStatefulKVCache: LanguageModel {
 }
 
 extension String: @retroactive Error {}
+
