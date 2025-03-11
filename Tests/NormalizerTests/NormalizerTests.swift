@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import Hub
+@testable import Configurations
 @testable import Tokenizers
 
 class NormalizerTests: XCTestCase {

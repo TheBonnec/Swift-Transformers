@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Hub
+import Configurations
 
 public protocol Decoder {
     func decode(tokens: [String]) -> [String]

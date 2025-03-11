@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Hub
+import Configurations
 
 public protocol PostProcessor {
     func postProcess(tokens: [String], tokensPair: [String]?, addSpecialTokens: Bool) -> [String]

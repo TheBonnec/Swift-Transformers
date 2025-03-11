@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Hub
+import Configurations
 
 public enum PreTokenizerOption: String {
     case firstSection

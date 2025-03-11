@@ -7,8 +7,8 @@
 
 import CoreML
 import Generation
-import Hub
 import Tokenizers
+import Configurations
 
 @available(macOS 15.0, iOS 18.0, *)
 public class LanguageModel {
@@ -17,15 +17,26 @@ public class LanguageModel {
     public let minContextLength: Int
     public let maxContextLength: Int
 
-    private var configuration: LanguageModelConfigurationFromHub?
+    private var configuration: Configurations?
     private var _tokenizer: Tokenizer?
 
   
 
-    public required init(model: MLModel) {
+    public required init(
+        model: MLModel,
+        modelConfigURL: URL,
+        tokenizerDataURL: URL,
+        tokenizerConfigURL: URL? = nil,
+        chatTemplateConfigURL: URL? = nil
+    ) {
         self.model = model
         (minContextLength, maxContextLength) = Self.contextRange(from: model)
-        configuration = LanguageModelConfigurationFromHub(modelName: modelName)
+        
+        do {
+            configuration = try Configurations.loadConfigurations(modelConfigURL: modelConfigURL, tokenizerDataURL: tokenizerDataURL, tokenizerConfigURL: tokenizerConfigURL, chatTemplateConfigURL: chatTemplateConfigURL)
+        } catch {
+            fatalError("Erreur lors du chargement des configurations: \(error.localizedDescription)")
+        }
     }
 
     public func resetState() async { }
@@ -67,9 +78,11 @@ private extension LanguageModel {
 
     static func contextRange(from model: MLModel, inputKey: String) -> (min: Int, max: Int) {
         let inputDescription = model.modelDescription.inputDescriptionsByName[inputKey]
-
+        
+        print("Model Description : \(model.modelDescription)")
+        
         guard let shapeConstraint = inputDescription?.multiArrayConstraint?.shapeConstraint else {
-            fatalError("Cannot obtain shape information")
+            fatalError("Cannot obtain shape information")   // Il est possible que les clefs dans Keys doivent être au format snake_case et non camelCase. Pour le savoir, se baser sur le retour du print juste au dessus
         }
 
         var minContextLength = 128
@@ -96,14 +109,6 @@ private extension LanguageModel {
     }
 }
 
-@available(macOS 15.0, iOS 18.0, *)
-extension LanguageModel {
-    struct Configurations {
-        var modelConfig: Config
-        var tokenizerConfig: Config?
-        var tokenizerData: Config
-    }
-}
 
 @available(macOS 15.0, iOS 18.0, *)
 extension LanguageModel {
@@ -124,15 +129,22 @@ extension LanguageModel {
 @available(macOS 15.0, iOS 18.0, *)
 public extension LanguageModel {
     static func loadCompiled(
-        url: URL,
-        computeUnits: MLComputeUnits = .cpuAndGPU
+        modelURL: URL,
+        modelConfigURL: URL,
+        tokenizerDataURL: URL,
+        tokenizerConfigURL: URL? = nil,
+        chatTemplateConfigURL: URL? = nil,
+        computeUnits: MLComputeUnits = .all
     ) throws -> LanguageModel {
         let config = MLModelConfiguration()
         config.computeUnits = computeUnits
-        let model = try MLModel(contentsOf: url, configuration: config)
-        return switch kvCacheAvailability(for: model) {
-        case .statefulKVCache: LanguageModelWithStatefulKVCache(model: model)
-        default: LanguageModel(model: model)
+        let model = try MLModel(contentsOf: modelURL, configuration: config)    // Possible erreur "hit program assert". Supprimer l'application et ses fichiers de l'ordinateur de test et recompiler
+        switch kvCacheAvailability(for: model) {
+        case .statefulKVCache:
+            print("KVCache")
+            return LanguageModelWithStatefulKVCache(model: model, modelConfigURL: modelConfigURL, tokenizerDataURL: tokenizerDataURL, tokenizerConfigURL: tokenizerConfigURL, chatTemplateConfigURL: chatTemplateConfigURL)
+        default:
+            return LanguageModel(model: model, modelConfigURL: modelConfigURL, tokenizerDataURL: tokenizerDataURL, tokenizerConfigURL: tokenizerConfigURL, chatTemplateConfigURL: chatTemplateConfigURL)
         }
     }
 }
@@ -225,6 +237,7 @@ public extension LanguageModel {
         }
 
         if isStatefulKVCacheAvailable(for: model) {
+            print("KVCache Vrai")
             return .statefulKVCache
         }
         let kCacheInput = model.modelDescription.inputDescriptionsByName[Keys.keyCache] != nil
@@ -236,6 +249,7 @@ public extension LanguageModel {
             fatalError("Invalid model configuration, expecting KV cache for inputs and outputs")
         }
         guard kCacheInput else {
+            print("Pas de KVCache")
             return nil
         }
         // Check if cache is dynamic or not.
@@ -258,64 +272,64 @@ public extension LanguageModel {
 @available(macOS 15.0, iOS 18.0, *)
 public extension LanguageModel {
     var modelConfig: Config {
-        get async throws {
-            try await configuration!.modelConfig
+        get {
+            configuration!.modelConfig
         }
     }
 
     var tokenizerConfig: Config? {
-        get async throws {
-            try await configuration!.tokenizerConfig
+        get {
+            configuration!.tokenizerConfig
         }
     }
 
     var tokenizerData: Config {
-        get async throws {
-            try await configuration!.tokenizerData
+        get {
+            configuration!.tokenizerData
         }
     }
 
     var modelType: String? {
-        get async throws {
-            try await modelConfig.modelType?.stringValue
+        get {
+            modelConfig.modelType?.stringValue
         }
     }
 
     var textGenerationParameters: Config? {
-        get async throws {
-            try await modelConfig.taskSpecificParams?.textGeneration
+        get {
+            modelConfig.taskSpecificParams?.textGeneration
         }
     }
 
     var defaultDoSample: Bool {
-        get async throws {
-            try await textGenerationParameters?.doSample?.boolValue ?? true
+        get {
+            textGenerationParameters?.doSample?.boolValue ?? true
         }
     }
 
     var bosTokenId: Int? {
-        get async throws {
-            let modelConfig = try await modelConfig
+        get {
+            let modelConfig = modelConfig
             return modelConfig.bosTokenId?.intValue
         }
     }
 
     var eosTokenId: Int? {
-        get async throws {
-            let modelConfig = try await modelConfig
+        get {
+            let modelConfig = modelConfig
             return modelConfig.eosTokenId?.intValue
         }
     }
 
     var tokenizer: Tokenizer {
-        get async throws {
+        get throws {
             if let _tokenizer {
                 return _tokenizer
             }
-            guard let tokenizerConfig = try await tokenizerConfig else {
+            guard let tokenizerConfig = tokenizerConfig else {
                 throw "Cannot retrieve Tokenizer configuration"
             }
-            let tokenizerData = try await tokenizerData
+            let tokenizerData = tokenizerData
             _tokenizer = try AutoTokenizer.from(
                 tokenizerConfig: tokenizerConfig,
                 tokenizerData: tokenizerData
@@ -350,8 +364,14 @@ public class LanguageModelWithStatefulKVCache: LanguageModel {
 
     var state: MLState?
 
-    public required init(model: MLModel) {
-        super.init(model: model)
+    public required init(
+        model: MLModel,
+        modelConfigURL: URL,
+        tokenizerDataURL: URL,
+        tokenizerConfigURL: URL? = nil,
+        chatTemplateConfigURL: URL? = nil
+    ) {
+        super.init(model: model, modelConfigURL: modelConfigURL, tokenizerDataURL: tokenizerDataURL, tokenizerConfigURL: tokenizerConfigURL, chatTemplateConfigURL: chatTemplateConfigURL)
         // To support pre-filling and extend, the input must support
         // flexible shapes.
         guard maxContextLength - minContextLength > 1 else {

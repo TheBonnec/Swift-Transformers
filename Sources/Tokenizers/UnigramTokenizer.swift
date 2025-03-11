@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import Hub
+import Configurations
 
 class UnigramTokenizer: PreTrainedTokenizerModel {
     struct SentencePieceToken {

@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import Hub
+import Configurations
 
 public class BertTokenizer {
     private let basicTokenizer: BasicTokenizer

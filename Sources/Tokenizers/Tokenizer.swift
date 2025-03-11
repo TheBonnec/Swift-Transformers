@@ -5,7 +5,7 @@
 //  Created by Pedro Cuenca on 6/5/23.
 //
 
-import Hub
+import Configurations
 import Foundation
 import Jinja
 
@@ -574,24 +574,9 @@ extension AutoTokenizer {
         return try tokenizerClass.init(tokenizerConfig: tokenizerConfig, tokenizerData: tokenizerData)
     }
 
-    public static func from(
-        pretrained model: String,
-        hubApi: HubApi = .shared
-    ) async throws -> Tokenizer {
-        let config = LanguageModelConfigurationFromHub(modelName: model, hubApi: hubApi)
-        guard let tokenizerConfig = try await config.tokenizerConfig else { throw TokenizerError.missingConfig }
-        let tokenizerData = try await config.tokenizerData
-
-        return try AutoTokenizer.from(tokenizerConfig: tokenizerConfig, tokenizerData: tokenizerData)
-    }
-
-    public static func from(
-        modelFolder: URL,
-        hubApi: HubApi = .shared
-    ) async throws -> Tokenizer {
-        let config = LanguageModelConfigurationFromHub(modelFolder: modelFolder, hubApi: hubApi)
-        guard let tokenizerConfig = try await config.tokenizerConfig else { throw TokenizerError.missingConfig }
-        let tokenizerData = try await config.tokenizerData
+    public static func from(configurations: Configurations) async throws -> Tokenizer {
+        guard let tokenizerConfig = configurations.tokenizerConfig else { throw TokenizerError.missingConfig }
+        let tokenizerData = configurations.tokenizerData
 
         return try PreTrainedTokenizer(tokenizerConfig: tokenizerConfig, tokenizerData: tokenizerData)
     }

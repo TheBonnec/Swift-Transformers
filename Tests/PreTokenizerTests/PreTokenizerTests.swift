@@ -5,7 +5,7 @@
 //
 
 import XCTest
-import Hub
+import Configurations
 @testable import Tokenizers
 
 class PreTokenizerTests: XCTestCase {

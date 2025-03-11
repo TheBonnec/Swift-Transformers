@@ -24,7 +24,13 @@ public protocol LanguageModelProtocol {
     /// Call `resetState()` for each new sequence generated.
     func resetState() async
 
-    init(model: MLModel)
+    init(
+        model: MLModel,
+        modelConfigURL: URL,
+        tokenizerDataURL: URL,
+        tokenizerConfigURL: URL?,
+        chatTemplateConfigURL: URL?
+    )
 
     /// Returns the next token conditioned on the given input.
     /// - Parameters:

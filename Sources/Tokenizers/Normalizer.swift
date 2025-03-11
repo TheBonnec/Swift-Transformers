@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Hub
+import Configurations
 
 public protocol Normalizer {
     func normalize(text: String) -> String

@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import Hub
+import Configurations
 
 struct BytePair: Hashable {
     let a: String
